@@ -1,0 +1,85 @@
+import streamlit as st
+import pandas as pd
+
+# 1. Cấu hình trang & Tiêu đề
+st.set_page_config(page_title="Quản lý điểm sinh viên", layout="wide")
+st.title("QUẢN LÝ ĐIỂM SINH VIÊN")
+
+# Dữ liệu mẫu 10 sinh viên
+data = {
+    "Họ tên": [
+        "Nguyễn Văn A", "Trần Thị B", "Lê Văn C", "Phạm Thị D", "Hoàng Văn E",
+        "Vũ Thị F", "Đặng Văn G", "Bùi Thị H", "Đỗ Văn I", "Ngo Thi K"
+    ],
+    "Chuyên cần": [9.0, 8.5, 7.0, 6.5, 10.0, 8.0, 5.5, 9.5, 4.0, 8.0],
+    "Giữa kỳ": [8.0, 7.5, 6.0, 5.0, 9.5, 7.0, 4.5, 9.0, 5.0, 7.5],
+    "Cuối kỳ": [8.5, 9.0, 6.5, 6.0, 9.0, 8.5, 5.0, 9.5, 4.5, 8.0]
+}
+
+df = pd.DataFrame(data)
+
+# Tính Tổng kết (Ví dụ: Chuyên cần 10%, Giữa kỳ 30%, Cuối kỳ 60%)
+df["Tổng kết"] = (df["Chuyên cần"] * 0.1 + df["Giữa kỳ"] * 0.3 + df["Cuối kỳ"] * 0.6).round(2)
+
+# Xếp loại
+def xep_loai(score):
+    if score >= 8.5:
+        return "Xuất sắc/Giỏi"
+    elif score >= 7.0:
+        return "Khá"
+    elif score >= 5.0:
+        return "Trung bình"
+    else:
+        return "Yếu"
+
+df["Xếp loại"] = df["Tổng kết"].apply(xep_loai)
+
+# 2. Hiển thị bảng điểm của 10 sinh viên
+st.subheader("Bảng điểm sinh viên")
+st.dataframe(df, use_container_width=True)
+
+# 3. Thống kê thông tin
+st.subheader("Thống kê chung")
+col1, col2, col3, col4 = st.columns(4)
+
+avg_score = df["Tổng kết"].mean()
+max_student = df.loc[df["Tổng kết"].idxmax()]["Họ tên"]
+min_student = df.loc[df["Tổng kết"].idxmin()]["Họ tên"]
+passed_count = (df["Tổng kết"] >= 5.0).sum()
+
+with col1:
+    st.metric("Điểm trung bình lớp", f"{avg_score:.2f}")
+with col2:
+    st.metric("Điểm cao nhất", f"{df['Tổng kết'].max()}", delta=max_student)
+with col3:
+    st.metric("Điểm thấp nhất", f"{df['Tổng kết'].min()}", delta=min_student, delta_color="inverse")
+with col4:
+    st.metric("Số sinh viên đạt (>=5.0)", f"{passed_count} / {len(df)}")
+
+st.markdown("---")
+
+# 4. Danh sách sổ xuống (Selectbox) tra cứu sinh viên
+st.subheader("Tra cứu thông tin sinh viên")
+selected_student = st.selectbox("Chọn sinh viên:", df["Họ tên"])
+
+if selected_student:
+    student_info = df[df["Họ tên"] == selected_student].iloc[0]
+    
+    st.write(f"**Thông tin chi tiết của {selected_student}:**")
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("Chuyên cần", student_info["Chuyên cần"])
+    c2.metric("Giữa kỳ", student_info["Giữa kỳ"])
+    c3.metric("Cuối kỳ", student_info["Cuối kỳ"])
+    c4.metric("Tổng kết", student_info["Tổng kết"])
+    c5.metric("Xếp loại", student_info["Xếp loại"])
+
+st.markdown("---")
+
+# 5. Biểu đồ cột điểm tổng kết của 10 sinh viên
+st.subheader("Biểu đồ điểm tổng kết")
+st.bar_chart(df.set_index("Họ tên")["Tổng kết"])
+
+st.markdown("---")
+
+# 6. Thông tin người tạo ở cuối trang (chữ nhỏ)
+st.caption("Người tạo ứng dụng: Nguyễn Văn A - MSSV: 12345678")
